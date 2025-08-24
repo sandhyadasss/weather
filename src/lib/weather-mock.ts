@@ -23,13 +23,13 @@ const getRandomElement = <T,>(arr: T[]): T => arr[Math.floor(Math.random() * arr
 const getRandomInt = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1)) + min;
 
 
-export const getMockWeatherData = async (): Promise<WeatherData> => {
+export const getMockWeatherData = async (city: string): Promise<WeatherData> => {
   await new Promise((res) => setTimeout(res, 1500)); // Simulate API delay
 
   const today = new Date();
   
   return {
-    city: "Current Location",
+    city: city,
     currentWeather: {
       temperature: getRandomInt(5, 25),
       humidity: getRandomInt(40, 90),
