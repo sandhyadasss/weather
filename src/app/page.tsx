@@ -2,10 +2,12 @@
 
 import { useState, useEffect } from 'react';
 import { getPersonalizedAdvice, type PersonalizedAdviceInput } from '@/ai/flows/personalized-advice';
+import { getTravelSuggestion, type TravelSuggestionInput, type TravelSuggestionOutput } from '@/ai/flows/travel-suggestion';
 import { getMockWeatherData, type WeatherData } from '@/lib/weather-mock';
 import { WeatherDisplay } from '@/components/weather/WeatherDisplay';
 import { ForecastDisplay } from '@/components/weather/ForecastDisplay';
 import { AdviceDisplay } from '@/components/weather/AdviceDisplay';
+import { TravelSuggestionDisplay } from '@/components/weather/TravelSuggestionDisplay';
 import { WeatherSkeleton } from '@/components/weather/WeatherSkeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
@@ -16,6 +18,7 @@ export default function Home() {
   const [location, setLocation] = useState('');
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [advice, setAdvice] = useState<string | null>(null);
+  const [travelSuggestion, setTravelSuggestion] = useState<TravelSuggestionOutput | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,22 +42,32 @@ export default function Home() {
   };
   
   useEffect(() => {
-    const fetchAdvice = async () => {
+    const fetchAiData = async () => {
       if (weatherData?.currentWeather) {
         try {
           setAdvice(null);
-          const adviceInput: PersonalizedAdviceInput = {
+          setTravelSuggestion(null);
+
+          const sharedInput = {
             temperature: weatherData.currentWeather.temperature,
             humidity: weatherData.currentWeather.humidity,
             windSpeed: weatherData.currentWeather.windSpeed,
             weatherDescription: weatherData.currentWeather.weatherDescription,
           };
-          const result = await getPersonalizedAdvice(adviceInput);
-          setAdvice(result.advice);
+          
+          const advicePromise = getPersonalizedAdvice(sharedInput as PersonalizedAdviceInput);
+          const travelSuggestionPromise = getTravelSuggestion(sharedInput as TravelSuggestionInput);
+
+          const [adviceResult, travelSuggestionResult] = await Promise.all([advicePromise, travelSuggestionPromise]);
+          
+          setAdvice(adviceResult.advice);
+          setTravelSuggestion(travelSuggestionResult);
+
         } catch (err) {
-          console.error("Failed to fetch personalized advice:", err);
+          console.error("Failed to fetch AI data:", err);
           // Don't set a user-facing error, just log it. The app is still usable.
           setAdvice("Could not load AI advice at the moment, but here is your weather!");
+          setTravelSuggestion({suggestion: "Could not load travel suggestion.", safetyLevel: "Caution"});
         } finally {
           setLoading(false);
         }
@@ -62,7 +75,7 @@ export default function Home() {
     };
 
     if (weatherData) {
-      fetchAdvice();
+      fetchAiData();
     } else {
         setLoading(false);
     }
@@ -90,7 +103,10 @@ export default function Home() {
       return (
         <div className="space-y-8">
           <WeatherDisplay city={weatherData.city} data={weatherData.currentWeather} />
-          <AdviceDisplay advice={advice} />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            <AdviceDisplay advice={advice} />
+            <TravelSuggestionDisplay suggestion={travelSuggestion} />
+          </div>
           <ForecastDisplay data={weatherData.forecast} />
         </div>
       );

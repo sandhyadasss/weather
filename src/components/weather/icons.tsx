@@ -1,5 +1,5 @@
 import type { LucideProps } from 'lucide-react';
-import { Sun, Cloud, CloudRain, CloudLightning, Snowflake, CloudSun, Wind, Droplets, Thermometer, MapPin, Lightbulb } from 'lucide-react';
+import { Sun, Cloud, CloudRain, CloudLightning, Snowflake, CloudSun, Wind, Droplets, Thermometer, MapPin, Lightbulb, CheckCircle2, AlertTriangle, XCircle } from 'lucide-react';
 
 export const Icons = {
   sun: Sun,
@@ -12,7 +12,10 @@ export const Icons = {
   humidity: Droplets,
   temperature: Thermometer,
   location: MapPin,
-  advice: Lightbulb
+  advice: Lightbulb,
+  safe: CheckCircle2,
+  caution: AlertTriangle,
+  dangerous: XCircle,
 };
 
 interface WeatherIconProps extends LucideProps {

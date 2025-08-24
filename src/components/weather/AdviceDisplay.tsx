@@ -9,24 +9,8 @@ interface AdviceDisplayProps {
 }
 
 export function AdviceDisplay({ advice }: AdviceDisplayProps) {
-  if (!advice) {
-    return (
-      <Card className="bg-accent/10 border-accent/20">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 font-headline text-lg">
-            <Icons.advice className="h-6 w-6 text-accent" />
-            Personalized Advice
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Skeleton className="h-5 w-3/4" />
-        </CardContent>
-      </Card>
-    );
-  }
-
   return (
-    <Card className="bg-accent/10 border-accent/20 transition-all hover:border-accent/40">
+    <Card className="bg-accent/10 border-accent/20 transition-all hover:border-accent/40 h-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 font-headline text-lg">
           <Icons.advice className="h-6 w-6 text-accent" />
@@ -34,7 +18,11 @@ export function AdviceDisplay({ advice }: AdviceDisplayProps) {
         </CardTitle>
       </CardHeader>
       <CardContent>
-        <p className="text-lg text-accent-foreground/90">{advice}</p>
+        {advice ? (
+          <p className="text-lg text-accent-foreground/90">{advice}</p>
+        ) : (
+          <Skeleton className="h-5 w-3/4" />
+        )}
       </CardContent>
     </Card>
   );
