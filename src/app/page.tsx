@@ -1,9 +1,10 @@
+
 "use client";
 
 import { useState, useEffect } from 'react';
 import { getPersonalizedAdvice, type PersonalizedAdviceInput } from '@/ai/flows/personalized-advice';
-import { getTravelSuggestion, type TravelSuggestionOutput } from '@/ai/flows/travel-suggestion';
-import { suggestPlaces, type SuggestPlacesOutput } from '@/ai/flows/suggest-places';
+import { getTravelSuggestion, type TravelSuggestionOutput, type TravelSuggestionInput } from '@/ai/flows/travel-suggestion';
+import { suggestPlaces, type SuggestPlacesOutput, type SuggestPlacesInput } from '@/ai/flows/suggest-places';
 import { getMockWeatherData, type WeatherData } from '@/lib/weather-mock';
 import { WeatherDisplay } from '@/components/weather/WeatherDisplay';
 import { ForecastDisplay } from '@/components/weather/ForecastDisplay';
@@ -90,7 +91,7 @@ export default function Home() {
           
           const advicePromise = getPersonalizedAdvice(sharedInput as PersonalizedAdviceInput);
           const travelSuggestionPromise = getTravelSuggestion(sharedInput as TravelSuggestionInput);
-          const placesPromise = suggestPlaces({ city: weatherData.city });
+          const placesPromise = suggestPlaces({ city: weatherData.city, weatherDescription: weatherData.currentWeather.weatherDescription } as SuggestPlacesInput);
 
           const [adviceResult, travelSuggestionResult, placesResult] = await Promise.all([advicePromise, travelSuggestionPromise, placesPromise]);
           

@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Provides suggestions for nearby places to visit based on a city.
+ * @fileOverview Provides suggestions for nearby places to visit based on a city and current weather.
  *
  * - suggestPlaces - A function that returns a list of suggested places.
  * - SuggestPlacesInput - The input type for the suggestPlaces function.
@@ -12,6 +12,7 @@ import {z} from 'genkit';
 
 const SuggestPlacesInputSchema = z.object({
   city: z.string().describe('The city for which to suggest places.'),
+  weatherDescription: z.string().describe('A brief description of the current weather conditions (e.g., "Sunny", "Rainy").'),
 });
 export type SuggestPlacesInput = z.infer<typeof SuggestPlacesInputSchema>;
 
@@ -33,9 +34,10 @@ const suggestPlacesPrompt = ai.definePrompt({
   name: 'suggestPlacesPrompt',
   input: {schema: SuggestPlacesInputSchema},
   output: {schema: SuggestPlacesOutputSchema},
-  prompt: `You are a helpful travel assistant. Based on the city provided, suggest up to three interesting places to visit nearby.
+  prompt: `You are a helpful travel assistant. Based on the city and weather provided, suggest up to three interesting places to visit nearby. The suggestions should be appropriate for the weather. For example, suggest indoor activities like museums or cafes if it is raining, and outdoor activities like parks or landmarks if it is sunny.
 
 City: {{city}}
+Weather: {{weatherDescription}}
 
 For each place, provide a name and a short, one-sentence description.`,
 });
