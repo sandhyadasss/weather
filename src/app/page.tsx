@@ -25,7 +25,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 export default function Home() {
   const [fromLocation, setFromLocation] = useState('');
-  const [toLocation, setToLocation] = useState('');
+  const [toLocation, setToLocation] = useState('Shimla');
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [advice, setAdvice] = useState<string | null>(null);
   const [travelSuggestion, setTravelSuggestion] = useState<TravelSuggestionOutput | null>(null);
@@ -73,6 +73,13 @@ export default function Home() {
   }, [fromLocation, toLocation, fetchSuggestions, activeInput]);
 
   useEffect(() => {
+    const defaultDestination = "Shimla";
+    setToLocation(defaultDestination);
+
+    const fetchInitialData = async (city: string) => {
+        await fetchWeatherData(city, currency);
+    };
+
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async (position) => {
         const { latitude, longitude } = position.coords;
@@ -81,21 +88,23 @@ export default function Home() {
           const data = await response.json();
           const city = data.address.city || data.address.town || data.address.village || data.address.suburb || data.address.county || data.address.state || 'your location';
           setFromLocation(city);
-          setToLocation(city); // By default, show weather for current location
-          await fetchWeatherData(city, currency);
+          await fetchInitialData(defaultDestination);
         } catch (err) {
           setError("Could not determine your city from your location. Please enter it manually.");
           console.error(err);
+           fetchInitialData(defaultDestination);
         } finally {
             setInitialLoading(false);
         }
       }, (geoError) => {
         setError("Could not access your location. Please enable location services or enter a location manually.");
         console.error("Geolocation error:", geoError);
+        fetchInitialData(defaultDestination);
         setInitialLoading(false);
       });
     } else {
       setError("Geolocation is not supported by your browser. Please enter a location manually.");
+      fetchInitialData(defaultDestination);
       setInitialLoading(false);
     }
   }, []);
