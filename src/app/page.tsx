@@ -19,6 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Terminal, MapPin, Search } from 'lucide-react';
 import React from 'react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Home() {
   const [location, setLocation] = useState('');
@@ -27,38 +28,39 @@ export default function Home() {
   const [travelSuggestion, setTravelSuggestion] = useState<TravelSuggestionOutput | null>(null);
   const [places, setPlaces] = useState<SuggestPlacesOutput | null>(null);
   const [fares, setFares] = useState<GetTicketFaresOutput | null>(null);
-  const [loading, setLoading] = useState(true); // Start with loading true for initial fetch
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [currency, setCurrency] = useState('USD');
+  const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
-    // This effect runs once on component mount to get the user's location
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(async (position) => {
         const { latitude, longitude } = position.coords;
         try {
-          // Use a reverse geocoding API to get city from coordinates
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
           const data = await response.json();
           const city = data.address.city || data.address.town || data.address.village || 'your location';
           setLocation(city);
-          fetchWeatherData(city);
+          await fetchWeatherData(city, currency);
         } catch (err) {
           setError("Could not determine your city from your location. Please enter it manually.");
           console.error(err);
-          setLoading(false);
+        } finally {
+            setInitialLoading(false);
         }
       }, (geoError) => {
         setError("Could not access your location. Please enable location services or enter a location manually.");
         console.error("Geolocation error:", geoError);
-        setLoading(false);
+        setInitialLoading(false);
       });
     } else {
       setError("Geolocation is not supported by your browser. Please enter a location manually.");
-      setLoading(false);
+      setInitialLoading(false);
     }
   }, []);
 
-  const fetchWeatherData = async (city: string) => {
+  const fetchWeatherData = async (city: string, currentCurrency: string) => {
     if (!city) {
       setError("Please enter a location.");
       return;
@@ -68,17 +70,17 @@ export default function Home() {
       setLoading(true);
       const data = await getMockWeatherData(city);
       setWeatherData(data);
+      await fetchAiData(data, currentCurrency);
     } catch (err) {
       setError("Failed to fetch weather data. Please try again later.");
       console.error(err);
       setWeatherData(null);
     } finally {
-      // setLoading(false) is handled in the advice useEffect
+      setLoading(false);
     }
   };
   
-  useEffect(() => {
-    const fetchAiData = async () => {
+  const fetchAiData = async (weatherData: WeatherData, currentCurrency: string) => {
       if (weatherData?.currentWeather) {
         try {
           setAdvice(null);
@@ -96,7 +98,7 @@ export default function Home() {
           const advicePromise = getPersonalizedAdvice(sharedInput as PersonalizedAdviceInput);
           const travelSuggestionPromise = getTravelSuggestion(sharedInput as TravelSuggestionInput);
           const placesPromise = suggestPlaces({ city: weatherData.city, weatherDescription: weatherData.currentWeather.weatherDescription } as SuggestPlacesInput);
-          const faresPromise = getTicketFares({ city: weatherData.city } as GetTicketFaresInput);
+          const faresPromise = getTicketFares({ city: weatherData.city, currency: currentCurrency } as GetTicketFaresInput);
 
           const [adviceResult, travelSuggestionResult, placesResult, faresResult] = await Promise.all([advicePromise, travelSuggestionPromise, placesPromise, faresPromise]);
           
@@ -112,29 +114,35 @@ export default function Home() {
           setTravelSuggestion({suggestion: "Could not load travel suggestion.", safetyLevel: "Caution"});
           setPlaces({places: []});
           setFares({flightFare: 0, trainFare: 0});
-        } finally {
-          setLoading(false);
         }
       }
     };
-
-    if (weatherData) {
-      fetchAiData();
-    } else {
-      // If there's no weather data, but we've stopped loading, it's either an error or initial state.
-      if (!loading) { 
-        setLoading(false);
-      }
-    }
-  }, [weatherData, loading]);
   
-  const handleFetchWeather = (e: React.FormEvent) => {
+  const handleFetchWeather = async (e: React.FormEvent) => {
     e.preventDefault();
-    fetchWeatherData(location);
+    await fetchWeatherData(location, currency);
+  };
+
+  const handleCurrencyChange = async (newCurrency: string) => {
+    setCurrency(newCurrency);
+    if(weatherData) {
+        setLoading(true);
+        try {
+            await fetchAiData(weatherData, newCurrency);
+        } catch (err) {
+            setError("Failed to fetch updated fare data.");
+            console.error(err);
+        } finally {
+            setLoading(false);
+        }
+    }
   };
 
   const renderContent = () => {
-    if (loading) {
+    if (initialLoading) {
+        return <WeatherSkeleton />;
+    }
+    if (loading && !weatherData) { // Show skeleton only when it's the first load
       return <WeatherSkeleton />;
     }
     if (error && !weatherData) { // Only show full-page error if there's no data
@@ -153,7 +161,7 @@ export default function Home() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <AdviceDisplay advice={advice} />
             <TravelSuggestionDisplay suggestion={travelSuggestion} />
-            <TicketFareDisplay fares={fares} />
+            <TicketFareDisplay fares={fares} currency={currency} loading={loading && !!fares} />
           </div>
           <PlacesDisplay places={places} />
           <ForecastDisplay data={weatherData.forecast} />
@@ -177,7 +185,7 @@ export default function Home() {
           <p className="text-muted-foreground mt-2">Plan your trip with AI-powered weather safety</p>
         </header>
         
-        <form onSubmit={handleFetchWeather} className="flex gap-2 max-w-md mx-auto">
+        <form onSubmit={handleFetchWeather} className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
             <Input 
                 type="text"
                 value={location}
@@ -186,10 +194,23 @@ export default function Home() {
                 className="flex-grow"
                 aria-label="Location"
             />
-            <Button type="submit" disabled={loading}>
-                <Search className="mr-2 h-4 w-4" />
-                Get Weather
-            </Button>
+            <div className="flex gap-2">
+              <Select value={currency} onValueChange={handleCurrencyChange}>
+                <SelectTrigger className="w-full sm:w-[120px]">
+                  <SelectValue placeholder="Currency" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="USD">USD</SelectItem>
+                  <SelectItem value="EUR">EUR</SelectItem>
+                  <SelectItem value="JPY">JPY</SelectItem>
+                  <SelectItem value="INR">INR</SelectItem>
+                </SelectContent>
+              </Select>
+              <Button type="submit" disabled={loading} className="w-full sm:w-auto flex-grow">
+                  <Search className="mr-2 h-4 w-4" />
+                  Get Weather
+              </Button>
+            </div>
         </form>
         
         <div className="mt-8">

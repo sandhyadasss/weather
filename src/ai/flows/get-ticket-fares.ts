@@ -1,6 +1,6 @@
 'use server';
 /**
- * @fileOverview Provides estimated flight and train ticket fares for a given city.
+ * @fileOverview Provides estimated flight and train ticket fares for a given city and currency.
  *
  * - getTicketFares - A function that returns estimated ticket fares.
  * - GetTicketFaresInput - The input type for the getTicketFares function.
@@ -12,12 +12,13 @@ import {z} from 'genkit';
 
 const GetTicketFaresInputSchema = z.object({
   city: z.string().describe('The destination city.'),
+  currency: z.string().describe('The currency for the fare estimates (e.g., "USD", "EUR", "INR", "JPY").'),
 });
 export type GetTicketFaresInput = z.infer<typeof GetTicketFaresInputSchema>;
 
 const GetTicketFaresOutputSchema = z.object({
-  flightFare: z.number().describe('The estimated flight fare for a one-way trip to the city in USD.'),
-  trainFare: z.number().describe('The estimated train fare for a one-way trip to the city in USD. If not applicable, return 0.'),
+  flightFare: z.number().describe('The estimated flight fare for a one-way trip to the city in the specified currency.'),
+  trainFare: z.number().describe('The estimated train fare for a one-way trip to the city in the specified currency. If not applicable, return 0.'),
 });
 export type GetTicketFaresOutput = z.infer<typeof GetTicketFaresOutputSchema>;
 
@@ -29,9 +30,10 @@ const getTicketFaresPrompt = ai.definePrompt({
   name: 'getTicketFaresPrompt',
   input: {schema: GetTicketFaresInputSchema},
   output: {schema: GetTicketFaresOutputSchema},
-  prompt: `You are a travel agent providing fare estimates. Based on the destination city, estimate the average one-way fare in USD for both a flight and a train ticket from a major nearby hub.
+  prompt: `You are a travel agent providing fare estimates. Based on the destination city, estimate the average one-way fare for both a flight and a train ticket from a major nearby hub. Provide the fare in the requested currency.
 
 Destination: {{city}}
+Currency: {{currency}}
 
 Provide a reasonable, non-zero estimate for flight fare. If train travel to this city is not common or practical (e.g., it's on a different continent), set the trainFare to 0.`,
 });
