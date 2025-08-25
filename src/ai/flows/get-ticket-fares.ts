@@ -11,6 +11,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 
 const GetTicketFaresInputSchema = z.object({
+  fromCity: z.string().describe('The starting city for the trip.'),
   city: z.string().describe('The destination city.'),
   currency: z.string().describe('The currency for the fare estimates (e.g., "USD", "EUR", "INR", "JPY").'),
 });
@@ -31,9 +32,10 @@ const getTicketFaresPrompt = ai.definePrompt({
   name: 'getTicketFaresPrompt',
   input: {schema: GetTicketFaresInputSchema},
   output: {schema: GetTicketFaresOutputSchema},
-  prompt: `You are a travel agent providing fare estimates. Based on the destination city, estimate the average one-way fare for both a flight and a train ticket from a major nearby hub. Provide the fare in the requested currency. Also suggest up to three popular airline companies that fly to that city.
+  prompt: `You are a travel agent providing fare estimates. Based on the start and destination cities, estimate the average one-way fare for both a flight and a train ticket. Provide the fare in the requested currency. Also suggest up to three popular airline companies that fly to that city.
 
-Destination: {{city}}
+From: {{fromCity}}
+To: {{city}}
 Currency: {{currency}}
 
 Provide a reasonable, non-zero estimate for flight fare. If train travel to this city is not common or practical (e.g., it's on a different continent), set the trainFare to 0.`,

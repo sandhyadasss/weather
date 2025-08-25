@@ -22,7 +22,8 @@ import React from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 export default function Home() {
-  const [location, setLocation] = useState('');
+  const [fromLocation, setFromLocation] = useState('');
+  const [toLocation, setToLocation] = useState('');
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [advice, setAdvice] = useState<string | null>(null);
   const [travelSuggestion, setTravelSuggestion] = useState<TravelSuggestionOutput | null>(null);
@@ -34,6 +35,8 @@ export default function Home() {
   const [initialLoading, setInitialLoading] = useState(true);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+  const [activeInput, setActiveInput] = useState<'from' | 'to' | null>(null);
+
 
   const fetchSuggestions = useCallback(async (query: string) => {
     if (query.length < 3) {
@@ -54,13 +57,17 @@ export default function Home() {
 
   useEffect(() => {
     const handler = setTimeout(() => {
-        fetchSuggestions(location);
+      if (activeInput === 'from' && fromLocation) {
+        fetchSuggestions(fromLocation);
+      } else if (activeInput === 'to' && toLocation) {
+        fetchSuggestions(toLocation);
+      }
     }, 500);
 
     return () => {
         clearTimeout(handler);
     };
-  }, [location, fetchSuggestions]);
+  }, [fromLocation, toLocation, fetchSuggestions, activeInput]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -70,7 +77,8 @@ export default function Home() {
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
           const data = await response.json();
           const city = data.address.city || data.address.town || data.address.village || 'your location';
-          setLocation(city);
+          setFromLocation(city);
+          setToLocation(city); // By default, show weather for current location
           await fetchWeatherData(city, currency);
         } catch (err) {
           setError("Could not determine your city from your location. Please enter it manually.");
@@ -91,7 +99,7 @@ export default function Home() {
 
   const fetchWeatherData = async (city: string, currentCurrency: string) => {
     if (!city) {
-      setError("Please enter a location.");
+      setError("Please enter a destination location.");
       return;
     }
     try {
@@ -99,7 +107,7 @@ export default function Home() {
       setLoading(true);
       const data = await getMockWeatherData(city);
       setWeatherData(data);
-      await fetchAiData(data, currentCurrency);
+      await fetchAiData(fromLocation, city, data, currentCurrency);
     } catch (err) {
       setError("Failed to fetch weather data. Please try again later.");
       console.error(err);
@@ -109,7 +117,7 @@ export default function Home() {
     }
   };
   
-  const fetchAiData = async (weatherData: WeatherData, currentCurrency: string) => {
+  const fetchAiData = async (fromCity: string, toCity: string, weatherData: WeatherData, currentCurrency: string) => {
       if (weatherData?.currentWeather) {
         try {
           setAdvice(null);
@@ -126,8 +134,8 @@ export default function Home() {
           
           const advicePromise = getPersonalizedAdvice(sharedInput as PersonalizedAdviceInput);
           const travelSuggestionPromise = getTravelSuggestion(sharedInput as TravelSuggestionInput);
-          const placesPromise = suggestPlaces({ city: weatherData.city, weatherDescription: weatherData.currentWeather.weatherDescription } as SuggestPlacesInput);
-          const faresPromise = getTicketFares({ city: weatherData.city, currency: currentCurrency } as GetTicketFaresInput);
+          const placesPromise = suggestPlaces({ city: toCity, weatherDescription: weatherData.currentWeather.weatherDescription } as SuggestPlacesInput);
+          const faresPromise = getTicketFares({ fromCity: fromCity, city: toCity, currency: currentCurrency } as GetTicketFaresInput);
 
           const [adviceResult, travelSuggestionResult, placesResult, faresResult] = await Promise.all([advicePromise, travelSuggestionPromise, placesPromise, faresPromise]);
           
@@ -150,7 +158,7 @@ export default function Home() {
   const handleFetchWeather = async (e: React.FormEvent) => {
     e.preventDefault();
     setSuggestions([]);
-    await fetchWeatherData(location, currency);
+    await fetchWeatherData(toLocation, currency);
   };
 
   const handleCurrencyChange = async (newCurrency: string) => {
@@ -158,7 +166,7 @@ export default function Home() {
     if(weatherData) {
         setLoading(true);
         try {
-            await fetchAiData(weatherData, newCurrency);
+            await fetchAiData(fromLocation, toLocation, weatherData, newCurrency);
         } catch (err) {
             setError("Failed to fetch updated fare data.");
             console.error(err);
@@ -169,8 +177,14 @@ export default function Home() {
   };
 
   const handleSuggestionClick = (suggestion: any) => {
-    setLocation(suggestion.display_name.split(',')[0]);
+    const city = suggestion.display_name.split(',')[0];
+    if (activeInput === 'from') {
+      setFromLocation(city);
+    } else {
+      setToLocation(city);
+    }
     setSuggestions([]);
+    setActiveInput(null);
   }
 
   const renderContent = () => {
@@ -221,33 +235,65 @@ export default function Home() {
         </header>
         
         <form onSubmit={handleFetchWeather} className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto relative">
-            <div className="flex-grow relative">
-                <Input 
-                    type="text"
-                    value={location}
-                    onChange={(e) => setLocation(e.target.value)}
-                    placeholder="E.g., London, New York, Tokyo"
-                    className="w-full"
-                    aria-label="Location"
-                    autoComplete="off"
-                />
-                {suggestions.length > 0 && (
-                    <div className="absolute top-full mt-1 w-full bg-card border rounded-md shadow-lg z-10">
-                        {suggestionsLoading ? (
-                            <div className="p-2 text-sm text-muted-foreground">Loading...</div>
-                        ) : (
-                            suggestions.map((suggestion, index) => (
-                                <div 
-                                    key={index}
-                                    className="p-2 hover:bg-accent cursor-pointer text-sm"
-                                    onClick={() => handleSuggestionClick(suggestion)}
-                                >
-                                    {suggestion.display_name}
-                                </div>
-                            ))
-                        )}
-                    </div>
-                )}
+            <div className="flex-grow grid grid-cols-1 sm:grid-cols-2 gap-2 relative">
+                <div className="relative">
+                    <Input 
+                        type="text"
+                        value={fromLocation}
+                        onFocus={() => setActiveInput('from')}
+                        onChange={(e) => setFromLocation(e.target.value)}
+                        placeholder="From"
+                        className="w-full"
+                        aria-label="From Location"
+                        autoComplete="off"
+                    />
+                     {activeInput === 'from' && suggestions.length > 0 && (
+                        <div className="absolute top-full mt-1 w-full bg-card border rounded-md shadow-lg z-10">
+                            {suggestionsLoading ? (
+                                <div className="p-2 text-sm text-muted-foreground">Loading...</div>
+                            ) : (
+                                suggestions.map((suggestion, index) => (
+                                    <div 
+                                        key={index}
+                                        className="p-2 hover:bg-accent cursor-pointer text-sm"
+                                        onClick={() => handleSuggestionClick(suggestion)}
+                                    >
+                                        {suggestion.display_name}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
+                 <div className="relative">
+                    <Input 
+                        type="text"
+                        value={toLocation}
+                        onFocus={() => setActiveInput('to')}
+                        onChange={(e) => setToLocation(e.target.value)}
+                        placeholder="To"
+                        className="w-full"
+                        aria-label="To Location"
+                        autoComplete="off"
+                    />
+                    {activeInput === 'to' && suggestions.length > 0 && (
+                        <div className="absolute top-full mt-1 w-full bg-card border rounded-md shadow-lg z-10">
+                            {suggestionsLoading ? (
+                                <div className="p-2 text-sm text-muted-foreground">Loading...</div>
+                            ) : (
+                                suggestions.map((suggestion, index) => (
+                                    <div 
+                                        key={index}
+                                        className="p-2 hover:bg-accent cursor-pointer text-sm"
+                                        onClick={() => handleSuggestionClick(suggestion)}
+                                    >
+                                        {suggestion.display_name}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    )}
+                </div>
             </div>
             <div className="flex gap-2">
               <Select value={currency} onValueChange={handleCurrencyChange}>
