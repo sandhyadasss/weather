@@ -181,8 +181,8 @@ export default function Home() {
     <main className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-8">
         <header className="text-center">
-          <h1 className="text-5xl font-bold font-headline text-primary-foreground tracking-tight" style={{color: "hsl(var(--primary))"}}>Trip Planner</h1>
-          <p className="text-muted-foreground mt-2">Plan your trip with AI-powered weather safety</p>
+          <h1 className="text-5xl font-bold font-headline text-primary-foreground tracking-tight" style={{color: "hsl(var(--primary))"}}>Weather-Safe Trip Planner</h1>
+          <p className="text-muted-foreground mt-2">AI-powered trip planning with weather safety suggestions.</p>
         </header>
         
         <form onSubmit={handleFetchWeather} className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">

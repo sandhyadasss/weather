@@ -3,8 +3,8 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster"
 
 export const metadata: Metadata = {
-  title: 'Trip Planner',
-  description: 'Plan your trip with AI-powered weather safety',
+  title: 'Weather-Safe Trip Planner',
+  description: 'AI-powered trip planning with weather safety suggestions.',
 };
 
 export default function RootLayout({
