@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -18,7 +19,7 @@ export function PlacesDisplay({ places }: PlacesDisplayProps) {
           <Compass className="h-6 w-6 text-primary" />
           Places to Visit
         </CardTitle>
-        <CardDescription>AI-powered suggestions for your trip.</CardDescription>
+        <CardDescription>other safe places to visit</CardDescription>
       </CardHeader>
       <CardContent>
         {places ? (
