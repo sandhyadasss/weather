@@ -23,8 +23,36 @@ export default function Home() {
   const [advice, setAdvice] = useState<string | null>(null);
   const [travelSuggestion, setTravelSuggestion] = useState<TravelSuggestionOutput | null>(null);
   const [places, setPlaces] = useState<SuggestPlacesOutput | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true); // Start with loading true for initial fetch
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    // This effect runs once on component mount to get the user's location
+    if (navigator.geolocation) {
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        const { latitude, longitude } = position.coords;
+        try {
+          // Use a reverse geocoding API to get city from coordinates
+          const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
+          const data = await response.json();
+          const city = data.address.city || data.address.town || data.address.village || 'your location';
+          setLocation(city);
+          fetchWeatherData(city);
+        } catch (err) {
+          setError("Could not determine your city from your location. Please enter it manually.");
+          console.error(err);
+          setLoading(false);
+        }
+      }, (geoError) => {
+        setError("Could not access your location. Please enable location services or enter a location manually.");
+        console.error("Geolocation error:", geoError);
+        setLoading(false);
+      });
+    } else {
+      setError("Geolocation is not supported by your browser. Please enter a location manually.");
+      setLoading(false);
+    }
+  }, []);
 
   const fetchWeatherData = async (city: string) => {
     if (!city) {
@@ -85,9 +113,12 @@ export default function Home() {
     if (weatherData) {
       fetchAiData();
     } else {
+      // If there's no weather data, but we've stopped loading, it's either an error or initial state.
+      if (!loading) { 
         setLoading(false);
+      }
     }
-  }, [weatherData]);
+  }, [weatherData, loading]);
   
   const handleFetchWeather = (e: React.FormEvent) => {
     e.preventDefault();
@@ -98,7 +129,7 @@ export default function Home() {
     if (loading) {
       return <WeatherSkeleton />;
     }
-    if (error) {
+    if (error && !weatherData) { // Only show full-page error if there's no data
       return (
         <Alert variant="destructive" className="max-w-md mx-auto">
           <Terminal className="h-4 w-4" />
