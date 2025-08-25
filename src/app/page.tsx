@@ -30,7 +30,7 @@ export default function Home() {
   const [fares, setFares] = useState<GetTicketFaresOutput | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [currency, setCurrency] = useState('USD');
+  const [currency, setCurrency] = useState('INR');
   const [initialLoading, setInitialLoading] = useState(true);
 
   useEffect(() => {
@@ -200,10 +200,10 @@ export default function Home() {
                   <SelectValue placeholder="Currency" />
                 </SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="INR">INR</SelectItem>
                   <SelectItem value="USD">USD</SelectItem>
                   <SelectItem value="EUR">EUR</SelectItem>
                   <SelectItem value="JPY">JPY</SelectItem>
-                  <SelectItem value="INR">INR</SelectItem>
                 </SelectContent>
               </Select>
               <Button type="submit" disabled={loading} className="w-full sm:w-auto flex-grow">
