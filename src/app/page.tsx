@@ -15,6 +15,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Terminal, MapPin, Search } from 'lucide-react';
+import React from 'react';
 
 export default function Home() {
   const [location, setLocation] = useState('');
@@ -132,8 +133,8 @@ export default function Home() {
     <main className="min-h-screen bg-background text-foreground p-4 md:p-8">
       <div className="max-w-5xl mx-auto space-y-8">
         <header className="text-center">
-          <h1 className="text-5xl font-bold font-headline text-primary-foreground tracking-tight" style={{color: "hsl(var(--primary))"}}>WeatherWise</h1>
-          <p className="text-muted-foreground mt-2">Your personal weather companion powered by AI</p>
+          <h1 className="text-5xl font-bold font-headline text-primary-foreground tracking-tight" style={{color: "hsl(var(--primary))"}}>Trip Planner</h1>
+          <p className="text-muted-foreground mt-2">Plan your trip with AI-powered weather safety</p>
         </header>
         
         <form onSubmit={handleFetchWeather} className="flex gap-2 max-w-md mx-auto">
