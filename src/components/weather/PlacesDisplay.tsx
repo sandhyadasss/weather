@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Skeleton } from '@/components/ui/skeleton';
 import { type SuggestPlacesOutput } from '@/ai/flows/suggest-places';
 import { Compass } from 'lucide-react';
+import { WeatherIcon } from './icons';
 
 interface PlacesDisplayProps {
   places: SuggestPlacesOutput | null;
@@ -21,14 +22,23 @@ export function PlacesDisplay({ places }: PlacesDisplayProps) {
       </CardHeader>
       <CardContent>
         {places ? (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {places.places.map((place, index) => (
-              <div key={index} className="p-4 rounded-lg border bg-background hover:shadow-md transition-shadow">
-                <h3 className="font-bold text-lg mb-1">{place.name}</h3>
-                <p className="text-sm text-muted-foreground">{place.description}</p>
+          places.places.length > 0 ? (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {places.places.map((place, index) => (
+                <div key={index} className="p-4 rounded-lg border bg-background hover:shadow-md transition-shadow">
+                  <div className="flex justify-between items-start">
+                    <h3 className="font-bold text-lg mb-1">{place.name}</h3>
+                    <WeatherIcon description={place.idealWeather} className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <p className="text-sm text-muted-foreground">{place.description}</p>
+                </div>
+              ))}
+            </div>
+          ) : (
+             <div className="text-center text-muted-foreground py-4">
+                <p>No place suggestions available at the moment.</p>
               </div>
-            ))}
-          </div>
+          )
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <Skeleton className="h-20 w-full" />

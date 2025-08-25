@@ -19,6 +19,7 @@ export type SuggestPlacesInput = z.infer<typeof SuggestPlacesInputSchema>;
 const PlaceSchema = z.object({
   name: z.string().describe('The name of the suggested place.'),
   description: z.string().describe('A brief, one-sentence description of the place.'),
+  idealWeather: z.enum(["Sunny", "Cloudy", "Rain", "Snow", "Partly cloudy", "Thunderstorm"]).describe('The ideal weather condition for visiting this place.'),
 });
 
 const SuggestPlacesOutputSchema = z.object({
@@ -39,7 +40,7 @@ const suggestPlacesPrompt = ai.definePrompt({
 City: {{city}}
 Weather: {{weatherDescription}}
 
-For each place, provide a name and a short, one-sentence description.`,
+For each place, provide a name, a short, one-sentence description, and the ideal weather to visit.`,
 });
 
 const suggestPlacesFlow = ai.defineFlow(
