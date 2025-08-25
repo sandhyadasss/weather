@@ -1,3 +1,4 @@
+
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
@@ -19,7 +20,7 @@ export function WeatherDisplay({ city, data }: CurrentWeatherProps) {
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-2xl font-headline">
           <Icons.location className="h-7 w-7 text-primary" />
-          Current Weather
+          Weather at Destination
         </CardTitle>
         <CardDescription>{city}</CardDescription>
       </CardHeader>
