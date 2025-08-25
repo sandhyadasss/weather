@@ -79,7 +79,7 @@ export default function Home() {
         try {
           const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${latitude}&lon=${longitude}`);
           const data = await response.json();
-          const city = data.address.city || data.address.town || data.address.village || 'your location';
+          const city = data.address.city || data.address.town || data.address.village || data.address.suburb || data.address.county || data.address.state || 'your location';
           setFromLocation(city);
           setToLocation(city); // By default, show weather for current location
           await fetchWeatherData(city, currency);
