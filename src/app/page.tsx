@@ -6,6 +6,7 @@ import { getPersonalizedAdvice, type PersonalizedAdviceInput } from '@/ai/flows/
 import { getTravelSuggestion, type TravelSuggestionOutput, type TravelSuggestionInput } from '@/ai/flows/travel-suggestion';
 import { suggestPlaces, type SuggestPlacesOutput, type SuggestPlacesInput } from '@/ai/flows/suggest-places';
 import { getTicketFares, type GetTicketFaresOutput, type GetTicketFaresInput } from '@/ai/flows/get-ticket-fares';
+import { getHotelSuggestions, type GetHotelSuggestionsOutput, type GetHotelSuggestionsInput } from '@/ai/flows/get-hotel-suggestions';
 import { getMockWeatherData, type WeatherData } from '@/lib/weather-mock';
 import { WeatherDisplay } from '@/components/weather/WeatherDisplay';
 import { ForecastDisplay } from '@/components/weather/ForecastDisplay';
@@ -13,6 +14,7 @@ import { AdviceDisplay } from '@/components/weather/AdviceDisplay';
 import { TravelSuggestionDisplay } from '@/components/weather/TravelSuggestionDisplay';
 import { PlacesDisplay } from '@/components/weather/PlacesDisplay';
 import { TicketFareDisplay } from '@/components/weather/TicketFareDisplay';
+import { HotelDisplay } from '@/components/weather/HotelDisplay';
 import { WeatherSkeleton } from '@/components/weather/WeatherSkeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
@@ -29,6 +31,7 @@ export default function Home() {
   const [travelSuggestion, setTravelSuggestion] = useState<TravelSuggestionOutput | null>(null);
   const [places, setPlaces] = useState<SuggestPlacesOutput | null>(null);
   const [fares, setFares] = useState<GetTicketFaresOutput | null>(null);
+  const [hotels, setHotels] = useState<GetHotelSuggestionsOutput | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [currency, setCurrency] = useState('INR');
@@ -124,6 +127,7 @@ export default function Home() {
           setTravelSuggestion(null);
           setPlaces(null);
           setFares(null);
+          setHotels(null);
 
           const sharedInput = {
             temperature: weatherData.currentWeather.temperature,
@@ -136,13 +140,15 @@ export default function Home() {
           const travelSuggestionPromise = getTravelSuggestion(sharedInput as TravelSuggestionInput);
           const placesPromise = suggestPlaces({ city: toCity, weatherDescription: weatherData.currentWeather.weatherDescription } as SuggestPlacesInput);
           const faresPromise = getTicketFares({ fromCity: fromCity, city: toCity, currency: currentCurrency } as GetTicketFaresInput);
+          const hotelsPromise = getHotelSuggestions({ city: toCity, currency: currentCurrency } as GetHotelSuggestionsInput);
 
-          const [adviceResult, travelSuggestionResult, placesResult, faresResult] = await Promise.all([advicePromise, travelSuggestionPromise, placesPromise, faresPromise]);
+          const [adviceResult, travelSuggestionResult, placesResult, faresResult, hotelsResult] = await Promise.all([advicePromise, travelSuggestionPromise, placesPromise, faresPromise, hotelsPromise]);
           
           setAdvice(adviceResult.advice);
           setTravelSuggestion(travelSuggestionResult);
           setPlaces(placesResult);
           setFares(faresResult);
+          setHotels(hotelsResult);
 
         } catch (err) {
           console.error("Failed to fetch AI data:", err);
@@ -151,6 +157,7 @@ export default function Home() {
           setTravelSuggestion({suggestion: "Could not load travel suggestion.", safetyLevel: "Caution"});
           setPlaces({places: []});
           setFares({flightFare: 0, trainFare: 0, flightCompanies: []});
+          setHotels({hotels: []});
         }
       }
     };
@@ -213,6 +220,7 @@ export default function Home() {
             <TicketFareDisplay fares={fares} currency={currency} loading={loading && !!fares} />
           </div>
           <PlacesDisplay places={places} />
+          <HotelDisplay hotels={hotels} currency={currency} />
           <ForecastDisplay data={weatherData.forecast} />
         </div>
       );
@@ -321,5 +329,3 @@ export default function Home() {
     </main>
   );
 }
-
-    
