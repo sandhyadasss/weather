@@ -1,7 +1,7 @@
 
 "use client";
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getPersonalizedAdvice, type PersonalizedAdviceInput } from '@/ai/flows/personalized-advice';
 import { getTravelSuggestion, type TravelSuggestionOutput, type TravelSuggestionInput } from '@/ai/flows/travel-suggestion';
 import { suggestPlaces, type SuggestPlacesOutput, type SuggestPlacesInput } from '@/ai/flows/suggest-places';
@@ -32,6 +32,35 @@ export default function Home() {
   const [error, setError] = useState<string | null>(null);
   const [currency, setCurrency] = useState('INR');
   const [initialLoading, setInitialLoading] = useState(true);
+  const [suggestions, setSuggestions] = useState<any[]>([]);
+  const [suggestionsLoading, setSuggestionsLoading] = useState(false);
+
+  const fetchSuggestions = useCallback(async (query: string) => {
+    if (query.length < 3) {
+      setSuggestions([]);
+      return;
+    }
+    setSuggestionsLoading(true);
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${query}&featuretype=city&limit=5`);
+      const data = await response.json();
+      setSuggestions(data);
+    } catch (err) {
+      console.error("Failed to fetch suggestions", err);
+    } finally {
+      setSuggestionsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    const handler = setTimeout(() => {
+        fetchSuggestions(location);
+    }, 500);
+
+    return () => {
+        clearTimeout(handler);
+    };
+  }, [location, fetchSuggestions]);
 
   useEffect(() => {
     if (navigator.geolocation) {
@@ -120,6 +149,7 @@ export default function Home() {
   
   const handleFetchWeather = async (e: React.FormEvent) => {
     e.preventDefault();
+    setSuggestions([]);
     await fetchWeatherData(location, currency);
   };
 
@@ -137,6 +167,11 @@ export default function Home() {
         }
     }
   };
+
+  const handleSuggestionClick = (suggestion: any) => {
+    setLocation(suggestion.display_name.split(',')[0]);
+    setSuggestions([]);
+  }
 
   const renderContent = () => {
     if (initialLoading) {
@@ -185,15 +220,35 @@ export default function Home() {
           <p className="text-muted-foreground mt-2">AI-powered trip planning with weather safety suggestions.</p>
         </header>
         
-        <form onSubmit={handleFetchWeather} className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto">
-            <Input 
-                type="text"
-                value={location}
-                onChange={(e) => setLocation(e.target.value)}
-                placeholder="E.g., London, New York, Tokyo"
-                className="flex-grow"
-                aria-label="Location"
-            />
+        <form onSubmit={handleFetchWeather} className="flex flex-col sm:flex-row gap-2 max-w-lg mx-auto relative">
+            <div className="flex-grow relative">
+                <Input 
+                    type="text"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    placeholder="E.g., London, New York, Tokyo"
+                    className="w-full"
+                    aria-label="Location"
+                    autoComplete="off"
+                />
+                {suggestions.length > 0 && (
+                    <div className="absolute top-full mt-1 w-full bg-card border rounded-md shadow-lg z-10">
+                        {suggestionsLoading ? (
+                            <div className="p-2 text-sm text-muted-foreground">Loading...</div>
+                        ) : (
+                            suggestions.map((suggestion, index) => (
+                                <div 
+                                    key={index}
+                                    className="p-2 hover:bg-accent cursor-pointer text-sm"
+                                    onClick={() => handleSuggestionClick(suggestion)}
+                                >
+                                    {suggestion.display_name}
+                                </div>
+                            ))
+                        )}
+                    </div>
+                )}
+            </div>
             <div className="flex gap-2">
               <Select value={currency} onValueChange={handleCurrencyChange}>
                 <SelectTrigger className="w-full sm:w-[120px]">
@@ -220,3 +275,5 @@ export default function Home() {
     </main>
   );
 }
+
+    
