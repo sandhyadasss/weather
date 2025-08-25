@@ -5,12 +5,14 @@ import { useState, useEffect } from 'react';
 import { getPersonalizedAdvice, type PersonalizedAdviceInput } from '@/ai/flows/personalized-advice';
 import { getTravelSuggestion, type TravelSuggestionOutput, type TravelSuggestionInput } from '@/ai/flows/travel-suggestion';
 import { suggestPlaces, type SuggestPlacesOutput, type SuggestPlacesInput } from '@/ai/flows/suggest-places';
+import { getTicketFares, type GetTicketFaresOutput, type GetTicketFaresInput } from '@/ai/flows/get-ticket-fares';
 import { getMockWeatherData, type WeatherData } from '@/lib/weather-mock';
 import { WeatherDisplay } from '@/components/weather/WeatherDisplay';
 import { ForecastDisplay } from '@/components/weather/ForecastDisplay';
 import { AdviceDisplay } from '@/components/weather/AdviceDisplay';
 import { TravelSuggestionDisplay } from '@/components/weather/TravelSuggestionDisplay';
 import { PlacesDisplay } from '@/components/weather/PlacesDisplay';
+import { TicketFareDisplay } from '@/components/weather/TicketFareDisplay';
 import { WeatherSkeleton } from '@/components/weather/WeatherSkeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
@@ -24,6 +26,7 @@ export default function Home() {
   const [advice, setAdvice] = useState<string | null>(null);
   const [travelSuggestion, setTravelSuggestion] = useState<TravelSuggestionOutput | null>(null);
   const [places, setPlaces] = useState<SuggestPlacesOutput | null>(null);
+  const [fares, setFares] = useState<GetTicketFaresOutput | null>(null);
   const [loading, setLoading] = useState(true); // Start with loading true for initial fetch
   const [error, setError] = useState<string | null>(null);
 
@@ -81,6 +84,7 @@ export default function Home() {
           setAdvice(null);
           setTravelSuggestion(null);
           setPlaces(null);
+          setFares(null);
 
           const sharedInput = {
             temperature: weatherData.currentWeather.temperature,
@@ -92,12 +96,14 @@ export default function Home() {
           const advicePromise = getPersonalizedAdvice(sharedInput as PersonalizedAdviceInput);
           const travelSuggestionPromise = getTravelSuggestion(sharedInput as TravelSuggestionInput);
           const placesPromise = suggestPlaces({ city: weatherData.city, weatherDescription: weatherData.currentWeather.weatherDescription } as SuggestPlacesInput);
+          const faresPromise = getTicketFares({ city: weatherData.city } as GetTicketFaresInput);
 
-          const [adviceResult, travelSuggestionResult, placesResult] = await Promise.all([advicePromise, travelSuggestionPromise, placesPromise]);
+          const [adviceResult, travelSuggestionResult, placesResult, faresResult] = await Promise.all([advicePromise, travelSuggestionPromise, placesPromise, faresPromise]);
           
           setAdvice(adviceResult.advice);
           setTravelSuggestion(travelSuggestionResult);
           setPlaces(placesResult);
+          setFares(faresResult);
 
         } catch (err) {
           console.error("Failed to fetch AI data:", err);
@@ -105,6 +111,7 @@ export default function Home() {
           setAdvice("Could not load AI advice at the moment, but here is your weather!");
           setTravelSuggestion({suggestion: "Could not load travel suggestion.", safetyLevel: "Caution"});
           setPlaces({places: []});
+          setFares({flightFare: 0, trainFare: 0});
         } finally {
           setLoading(false);
         }
@@ -143,9 +150,10 @@ export default function Home() {
       return (
         <div className="space-y-8">
           <WeatherDisplay city={weatherData.city} data={weatherData.currentWeather} />
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             <AdviceDisplay advice={advice} />
             <TravelSuggestionDisplay suggestion={travelSuggestion} />
+            <TicketFareDisplay fares={fares} />
           </div>
           <PlacesDisplay places={places} />
           <ForecastDisplay data={weatherData.forecast} />
