@@ -2,12 +2,14 @@
 
 import { useState, useEffect } from 'react';
 import { getPersonalizedAdvice, type PersonalizedAdviceInput } from '@/ai/flows/personalized-advice';
-import { getTravelSuggestion, type TravelSuggestionInput, type TravelSuggestionOutput } from '@/ai/flows/travel-suggestion';
+import { getTravelSuggestion, type TravelSuggestionOutput } from '@/ai/flows/travel-suggestion';
+import { suggestPlaces, type SuggestPlacesOutput } from '@/ai/flows/suggest-places';
 import { getMockWeatherData, type WeatherData } from '@/lib/weather-mock';
 import { WeatherDisplay } from '@/components/weather/WeatherDisplay';
 import { ForecastDisplay } from '@/components/weather/ForecastDisplay';
 import { AdviceDisplay } from '@/components/weather/AdviceDisplay';
 import { TravelSuggestionDisplay } from '@/components/weather/TravelSuggestionDisplay';
+import { PlacesDisplay } from '@/components/weather/PlacesDisplay';
 import { WeatherSkeleton } from '@/components/weather/WeatherSkeleton';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Input } from '@/components/ui/input';
@@ -19,6 +21,7 @@ export default function Home() {
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [advice, setAdvice] = useState<string | null>(null);
   const [travelSuggestion, setTravelSuggestion] = useState<TravelSuggestionOutput | null>(null);
+  const [places, setPlaces] = useState<SuggestPlacesOutput | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -47,6 +50,7 @@ export default function Home() {
         try {
           setAdvice(null);
           setTravelSuggestion(null);
+          setPlaces(null);
 
           const sharedInput = {
             temperature: weatherData.currentWeather.temperature,
@@ -57,17 +61,20 @@ export default function Home() {
           
           const advicePromise = getPersonalizedAdvice(sharedInput as PersonalizedAdviceInput);
           const travelSuggestionPromise = getTravelSuggestion(sharedInput as TravelSuggestionInput);
+          const placesPromise = suggestPlaces({ city: weatherData.city });
 
-          const [adviceResult, travelSuggestionResult] = await Promise.all([advicePromise, travelSuggestionPromise]);
+          const [adviceResult, travelSuggestionResult, placesResult] = await Promise.all([advicePromise, travelSuggestionPromise, placesPromise]);
           
           setAdvice(adviceResult.advice);
           setTravelSuggestion(travelSuggestionResult);
+          setPlaces(placesResult);
 
         } catch (err) {
           console.error("Failed to fetch AI data:", err);
           // Don't set a user-facing error, just log it. The app is still usable.
           setAdvice("Could not load AI advice at the moment, but here is your weather!");
           setTravelSuggestion({suggestion: "Could not load travel suggestion.", safetyLevel: "Caution"});
+          setPlaces({places: []});
         } finally {
           setLoading(false);
         }
@@ -107,6 +114,7 @@ export default function Home() {
             <AdviceDisplay advice={advice} />
             <TravelSuggestionDisplay suggestion={travelSuggestion} />
           </div>
+          <PlacesDisplay places={places} />
           <ForecastDisplay data={weatherData.forecast} />
         </div>
       );
