@@ -5,6 +5,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Plane, Train } from 'lucide-react';
 import { type GetTicketFaresOutput } from '@/ai/flows/get-ticket-fares';
+import { Badge } from '../ui/badge';
 
 interface TicketFareDisplayProps {
   fares: GetTicketFaresOutput | null;
@@ -41,6 +42,13 @@ export function TicketFareDisplay({ fares, currency, loading }: TicketFareDispla
                     <p className="text-xl font-bold">{symbol}{fares.flightFare.toLocaleString()}</p>
                   </div>
                 </div>
+                {fares.flightCompanies && fares.flightCompanies.length > 0 && (
+                  <div className="flex flex-wrap gap-2">
+                    {fares.flightCompanies.map((company, index) => (
+                      <Badge key={index} variant="secondary">{company}</Badge>
+                    ))}
+                  </div>
+                )}
                 {fares.trainFare > 0 && (
                     <div className="flex items-center gap-4">
                         <Train className="h-6 w-6 text-primary" />

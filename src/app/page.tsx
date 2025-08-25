@@ -113,7 +113,7 @@ export default function Home() {
           setAdvice("Could not load AI advice at the moment, but here is your weather!");
           setTravelSuggestion({suggestion: "Could not load travel suggestion.", safetyLevel: "Caution"});
           setPlaces({places: []});
-          setFares({flightFare: 0, trainFare: 0});
+          setFares({flightFare: 0, trainFare: 0, flightCompanies: []});
         }
       }
     };
